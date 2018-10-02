@@ -9,6 +9,9 @@ RUN mkdir /fever/
 RUN mkdir /fever/src
 RUN mkdir /fever/config
 RUN mkdir /fever/scripts
+RUN mkdir /fever/trained-model
+RUN mkdir /fever/fever-data-small
+
 
 VOLUME /fever/
 
@@ -16,6 +19,8 @@ ADD requirements.txt /fever/
 ADD src /fever/src/
 ADD config /fever/config/
 ADD scripts /fever/scripts/
+ADD trained-model /fever/trained-model/
+ADD fever-data-small /fever/fever-data-small/
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
@@ -39,6 +44,6 @@ RUN conda create -q -n fever python=3.6
 
 WORKDIR /fever/
 RUN . activate fever
-RUN conda install -y pytorch=0.3.1 torchvision -c pytorch
+RUN conda install pytorch-cpu torchvision-cpu -c pytorch
 RUN pip install -r requirements.txt
 RUN python src/scripts/prepare_nltk.py
