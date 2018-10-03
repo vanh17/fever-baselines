@@ -44,6 +44,6 @@ RUN conda create -q -n fever python=3.6
 
 WORKDIR /fever/
 RUN . activate fever
-RUN conda install pytorch-cpu torchvision-cpu -c pytorch
+RUN conda install -y pytorch=0.3.1 torchvision -c pytorch
 RUN pip install -r requirements.txt
 RUN python src/scripts/prepare_nltk.py
