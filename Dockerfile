@@ -9,6 +9,11 @@ RUN mkdir /fever/
 RUN mkdir /fever/src
 RUN mkdir /fever/config
 RUN mkdir /fever/scripts
+RUN mkdir /fever/data/
+RUN mkdir /fever/data/fever/
+RUN mkdir /fever/data/fever-data/
+RUN mkdir /fever/data/models/
+
 
 VOLUME /fever/
 
@@ -16,6 +21,9 @@ ADD requirements.txt /fever/
 ADD src /fever/src/
 ADD config /fever/config/
 ADD scripts /fever/scripts/
+ADD trained-model/train_final  /fever/data/models/
+ADD fever-data-small /fever/data/fever-data/
+ADD fever-small /fever/data/fever/
 
 RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
