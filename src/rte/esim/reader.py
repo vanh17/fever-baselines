@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Iterator
 import json
 import logging
 
@@ -8,11 +8,10 @@ import tqdm
 from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
-from allennlp.data.dataset import Dataset
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import Field, TextField, LabelField
 from allennlp.data.instance import Instance
-from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
+from allennlp.data.token_indexers import ELMoTokenCharactersIndexer, TokenIndexer
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from common.dataset.reader import JSONLineReader
 from common.util.random import SimpleRandom
@@ -43,12 +42,12 @@ class FEVERReader(DatasetReader):
                  sentence_level = False,
                  wiki_tokenizer: Tokenizer = None,
                  claim_tokenizer: Tokenizer = None,
-                 token_indexers: Dict[str, TokenIndexer] = None,
+                 #token_indexers: Dict[str, TokenIndexer] = None,
                  filtering: str = None) -> None:
         self._sentence_level = sentence_level
         self._wiki_tokenizer = wiki_tokenizer or WordTokenizer()
         self._claim_tokenizer = claim_tokenizer or WordTokenizer()
-        self._token_indexers = token_indexers or {'tokens': SingleIdTokenIndexer()}
+        self._token_indexers = {'elmo': ELMoTokenCharactersIndexer()}
 
         self.db = db
 
@@ -65,9 +64,7 @@ class FEVERReader(DatasetReader):
             return non_empty_lines[SimpleRandom.get_instance().next_rand(0,len(non_empty_lines)-1)]
 
     @overrides
-    def read(self, file_path: str):
-
-        instances = []
+    def _read(self, file_path: str) -> Iterator[Instance]:
 
         ds = FEVERDataSet(file_path,reader=self.reader, formatter=self.formatter)
         ds.read()
@@ -88,11 +85,7 @@ class FEVERReader(DatasetReader):
 
             hypothesis = instance["claim"]
             label = instance["label_text"]
-            instances.append(self.text_to_instance(premise, hypothesis, label))
-        if not instances:
-            raise ConfigurationError("No instances were read from the given filepath {}. "
-                                     "Is the path correct?".format(file_path))
-        return Dataset(instances)
+            yield self.text_to_instance(premise, hypothesis, label)
 
     @overrides
     def text_to_instance(self,  # type: ignore
@@ -123,4 +116,3 @@ class FEVERReader(DatasetReader):
                            claim_tokenizer=claim_tokenizer,
                            wiki_tokenizer=wiki_tokenizer,
                            token_indexers=token_indexers)
-

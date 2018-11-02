@@ -6,7 +6,7 @@ from allennlp.commands.train import prepare_environment
 from typing import List, Union, Dict, Any
 from allennlp.common import Params
 from allennlp.common.tee_logger import TeeLogger
-from allennlp.data import Vocabulary, Dataset, DataIterator, DatasetReader, Tokenizer, TokenIndexer
+from allennlp.data import Vocabulary, DataIterator, DatasetReader, Tokenizer, TokenIndexer
 from allennlp.models import Model, archive_model
 from allennlp.training import Trainer
 from common.util.log_helper import LogHelper
@@ -44,8 +44,8 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
 
 
     os.makedirs(serialization_dir, exist_ok=True)
-    sys.stdout = TeeLogger(os.path.join(serialization_dir, "stdout.log"), sys.stdout)  # type: ignore
-    sys.stderr = TeeLogger(os.path.join(serialization_dir, "stderr.log"), sys.stderr)  # type: ignore
+    sys.stdout = TeeLogger(os.path.join(serialization_dir, "stdout.log"), sys.stdout, True)  # type: ignore
+    sys.stderr = TeeLogger(os.path.join(serialization_dir, "stderr.log"), sys.stderr, True)  # type: ignore
     handler = logging.FileHandler(os.path.join(serialization_dir, "python_logging.log"))
     handler.setLevel(logging.INFO)
     handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s'))
@@ -61,7 +61,7 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
                                  sentence_level=ds_params.pop("sentence_level",False),
                                  wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                                  claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                 token_indexers=TokenIndexer.dict_from_params(ds_params.pop('token_indexers', {})),
+                                 #token_indexers=TokenIndexer.from_params(ds_params.pop('token_indexers', {})),
                                  filtering=filtering)
 
     train_data_path = params.pop('train_data_path')
@@ -81,17 +81,20 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
         validation_data = None
 
     logger.info("Creating a vocabulary using %s data.", ", ".join(datasets_in_vocab))
-    vocab = Vocabulary.from_params(params.pop("vocabulary", {}),
-                                   Dataset([instance for dataset in all_datasets
-                                            for instance in dataset.instances]))
+
+    #handle all_datasets
+    vocab = Vocabulary.from_params(params.pop("vocabulary", {}), [instance for dataset in all_datasets
+                                            for instance in dataset])
+
     vocab.save_to_files(os.path.join(serialization_dir, "vocabulary"))
 
-    model = Model.from_params(vocab, params.pop('model'))
-    iterator = DataIterator.from_params(params.pop("iterator"))
+    try:
+        model = Model.from_params(params.pop('model'), vocab=vocab)
+        iterator = DataIterator.from_params(params.pop("iterator"))
+    except Exception as e:
+        logger.info("Crashed with error: " + str(e))
 
-    train_data.index_instances(vocab)
-    if validation_data:
-        validation_data.index_instances(vocab)
+    iterator.index_with(vocab)
 
     trainer_params = params.pop("trainer")
     if cuda_device is not None:
