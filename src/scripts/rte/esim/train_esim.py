@@ -12,7 +12,7 @@ from allennlp.training import Trainer
 from common.util.log_helper import LogHelper
 from common.util.random import SimpleRandom
 from retrieval.fever_doc_db import FeverDocDB
-from rte.parikh.reader import FEVERReader
+from rte.esim.reader import FEVERReader
 
 import argparse
 import logging
