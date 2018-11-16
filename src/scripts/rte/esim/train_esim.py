@@ -21,6 +21,10 @@ import json
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+
+# PYTHONPATH=src python src/scripts/rte/esim/train_esim.py data/fever/fever.db config/esim_elmo.json logs/da_nn_sent --cuda-device -1
+
+
 def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_device:int, serialization_dir: str, filtering: str) -> Model:
     """
     This function can be used as an entry point to running models in AllenNLP
@@ -52,7 +56,7 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
     logging.getLogger().addHandler(handler)
     serialization_params = deepcopy(params).as_dict(quiet=True)
 
-    with open(os.path.join(serialization_dir, "model_params.json"), "w") as param_file:
+    with open(os.path.join(serialization_dir, "config.json"), "w") as param_file:
         json.dump(serialization_params, param_file, indent=4)
 
     # Now we begin assembling the required parts for the Trainer.
