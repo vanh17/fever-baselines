@@ -8,13 +8,13 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 from allennlp.common import Params
 from allennlp.common.tee_logger import TeeLogger
 #from allennlp.common.util import prepare_environment
-from allennlp.data import Vocabulary, Dataset, DataIterator, DatasetReader, Tokenizer, TokenIndexer
+from allennlp.data import Vocabulary, DataIterator, DatasetReader, Tokenizer, TokenIndexer
 from allennlp.models import Model, archive_model, load_archive
 from allennlp.service.predictors import Predictor
 from allennlp.training import Trainer
 from common.util.log_helper import LogHelper
 from retrieval.fever_doc_db import FeverDocDB
-from rte.parikh.reader import FEVERReader
+from rte.esim.reader import FEVERReader
 from tqdm import tqdm
 import argparse
 import logging
@@ -37,10 +37,11 @@ def eval_model(db: FeverDocDB, args) -> Model:
                                  sentence_level=ds_params.pop("sentence_level",False),
                                  wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                                  claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                 token_indexers=TokenIndexer.dict_from_params(ds_params.pop('token_indexers', {})))
+                                # token_indexers=TokenIndexer.dict_from_params(ds_params.pop('token_indexers', {}))
+                         )
 
     logger.info("Reading training data from %s", args.in_file)
-    data = reader.read(args.in_file).instances
+    data = reader.read(args.in_file)
 
     actual = []
     predicted = []
@@ -52,7 +53,7 @@ def eval_model(db: FeverDocDB, args) -> Model:
         if item.fields["premise"] is None or item.fields["premise"].sequence_length() == 0:
             cls = "NOT ENOUGH INFO"
         else:
-            prediction = model.forward_on_instance(item, args.cuda_device)
+            prediction = model.forward_on_instance(item)
             cls = model.vocab._index_to_token["labels"][np.argmax(prediction["label_probs"])]
 
         if "label" in item.fields:
