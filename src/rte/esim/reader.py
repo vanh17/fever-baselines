@@ -11,7 +11,7 @@ from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.fields import Field, TextField, LabelField
 from allennlp.data.instance import Instance
-from allennlp.data.token_indexers import ELMoTokenCharactersIndexer, TokenIndexer
+from allennlp.data.token_indexers import ELMoTokenCharactersIndexer, SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
 from common.dataset.reader import JSONLineReader
 from common.util.random import SimpleRandom
@@ -47,7 +47,8 @@ class FEVERReader(DatasetReader):
         self._sentence_level = sentence_level
         self._wiki_tokenizer = wiki_tokenizer or WordTokenizer()
         self._claim_tokenizer = claim_tokenizer or WordTokenizer()
-        self._token_indexers = {'elmo': ELMoTokenCharactersIndexer()}
+
+        self._token_indexers = {'elmo': ELMoTokenCharactersIndexer(), 'tokens': SingleIdTokenIndexer()}
 
         self.db = db
 
