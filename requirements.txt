@@ -6,6 +6,7 @@ overrides
 tqdm
 nltk
 allennlp==0.7.1
+flair==0.3.2
 pytz
 tensorboard-pytorch
 git+git://github.com/j6mes/drqa@parallel

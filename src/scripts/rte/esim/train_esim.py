@@ -22,7 +22,8 @@ import json
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-# PYTHONPATH=src python src/scripts/rte/esim/train_esim.py data/fever/fever.db config/esim_elmo.json logs/da_nn_sent --cuda-device -1
+# PYTHONPATH=src python src/scripts/rte/esim/train_esim.py data/fever/fever.db config/esim_elmo.json logs/esim_nn_sent --cuda-device -1
+# PYTHONPATH=src python src/scripts/rte/esim/train_esim.py data/fever/fever.db config/esim_elmo_glove.json logs/esim_glove_nn_sent --cuda-device -1
 
 
 def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_device:int, serialization_dir: str, filtering: str) -> Model:
@@ -65,7 +66,7 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
                                  sentence_level=ds_params.pop("sentence_level",False),
                                  wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                                  claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                 #token_indexers=TokenIndexer.from_params(ds_params.pop('token_indexers', {})),
+                                 token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {})),
                                  filtering=filtering)
 
     train_data_path = params.pop('train_data_path')

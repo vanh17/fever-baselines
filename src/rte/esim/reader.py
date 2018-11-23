@@ -42,13 +42,13 @@ class FEVERReader(DatasetReader):
                  sentence_level = False,
                  wiki_tokenizer: Tokenizer = None,
                  claim_tokenizer: Tokenizer = None,
-                 #token_indexers: Dict[str, TokenIndexer] = None,
+                 token_indexers: Dict[str, TokenIndexer] = None,
                  filtering: str = None) -> None:
         self._sentence_level = sentence_level
         self._wiki_tokenizer = wiki_tokenizer or WordTokenizer()
         self._claim_tokenizer = claim_tokenizer or WordTokenizer()
 
-        self._token_indexers = {'elmo': ELMoTokenCharactersIndexer(), 'tokens': SingleIdTokenIndexer()}
+        self._token_indexers = token_indexers or {'elmo': ELMoTokenCharactersIndexer(), 'tokens': SingleIdTokenIndexer()}
 
         self.db = db
 
@@ -103,17 +103,21 @@ class FEVERReader(DatasetReader):
             fields['label'] = LabelField(label)
         return Instance(fields)
 
-    @classmethod
-    def from_params(cls, params: Params) -> 'FEVERReader':
-        claim_tokenizer = Tokenizer.from_params(params.pop('claim_tokenizer', {}))
-        wiki_tokenizer = Tokenizer.from_params(params.pop('wiki_tokenizer', {}))
+    @staticmethod
+    def custom_dict_from_params(params: Params) -> 'Dict[str, TokenIndexer]':  # type: ignore
+        """
+        We typically use ``TokenIndexers`` in a dictionary, with each ``TokenIndexer`` getting a
+        name.  The specification for this in a ``Params`` object is typically ``{"name" ->
+        {indexer_params}}``.  This method reads that whole set of parameters and returns a
+        dictionary suitable for use in a ``TextField``.
 
-        token_indexers = TokenIndexer.dict_from_params(params.pop('token_indexers', {}))
-        sentence_level = params.pop("sentence_level",False)
-        db = FeverDocDB(params.pop("db_path","data/fever.db"))
-        params.assert_empty(cls.__name__)
-        return FEVERReader(db=db,
-                           sentence_level=sentence_level,
-                           claim_tokenizer=claim_tokenizer,
-                           wiki_tokenizer=wiki_tokenizer,
-                           token_indexers=token_indexers)
+        Because default values for token indexers are typically handled in the calling class to
+        this and are based on checking for ``None``, if there were no parameters specifying any
+        token indexers in the given ``params``, we return ``None`` instead of an empty dictionary.
+        """
+        token_indexers = {}
+        for name, indexer_params in params.items():
+            token_indexers[name] = TokenIndexer.from_params(indexer_params)
+        if token_indexers == {}:
+            token_indexers = None
+        return token_indexers

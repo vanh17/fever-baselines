@@ -24,6 +24,8 @@ import numpy as np
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+# PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/dev.ns.pages.p1.jsonl
+
 def eval_model(db: FeverDocDB, args) -> Model:
     archive = load_archive(args.archive_file, cuda_device=args.cuda_device)
 
@@ -37,7 +39,7 @@ def eval_model(db: FeverDocDB, args) -> Model:
                                  sentence_level=ds_params.pop("sentence_level",False),
                                  wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                                  claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                # token_indexers=TokenIndexer.dict_from_params(ds_params.pop('token_indexers', {}))
+                                 token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {}))
                          )
 
     logger.info("Reading training data from %s", args.in_file)
