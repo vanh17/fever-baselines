@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 # Replace the subscriptionKey string value with your valid subscription key.
-subscriptionKey = '1f5276a0d951474cb672826b30098ed2'
+subscriptionKey = '<enter valid subscription key>'
 
 host = 'api.cognitive.microsoft.com'
 path = '/bing/v7.0/entities'
