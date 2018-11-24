@@ -60,6 +60,10 @@ def eval_model(db: FeverDocDB, args) -> Model:
 
         if "label" in item.fields:
             actual.append(item.fields["label"].label)
+            if item.fields["label"].label == "NOT ENOUGH INFO" and cls != "NOT ENOUGH INFO":
+                if item.fields["metadata"].metadata["ner_missing"]:
+                    cls = "NOT ENOUGH INFO"
+
         predicted.append(cls)
 
         if args.log is not None:
