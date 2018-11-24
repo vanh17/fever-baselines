@@ -43,8 +43,10 @@ class FEVERReader(DatasetReader):
                  wiki_tokenizer: Tokenizer = None,
                  claim_tokenizer: Tokenizer = None,
                  token_indexers: Dict[str, TokenIndexer] = None,
+                 ner_facts = False,
                  filtering: str = None) -> None:
         self._sentence_level = sentence_level
+        self._ner_facts = ner_facts
         self._wiki_tokenizer = wiki_tokenizer or WordTokenizer()
         self._claim_tokenizer = claim_tokenizer or WordTokenizer()
 
@@ -80,7 +82,8 @@ class FEVERReader(DatasetReader):
             else:
                 lines = set([self.get_doc_line(d[0],d[1]) for d in instance['evidence']])
                 premise = " ".join(lines)
-                premise = premise + " ".join(instance['fact'])
+                if self._ner_facts:
+                    premise = premise + " ".join(instance['fact'])
 
             if len(premise.strip()) == 0:
                 premise = ""

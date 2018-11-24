@@ -39,7 +39,8 @@ def eval_model(db: FeverDocDB, args) -> Model:
                                  sentence_level=ds_params.pop("sentence_level",False),
                                  wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                                  claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                 token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {}))
+                                 token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {})),
+                                 ner_facts=args.ner_facts
                          )
 
     logger.info("Reading training data from %s", args.in_file)
@@ -60,9 +61,22 @@ def eval_model(db: FeverDocDB, args) -> Model:
 
         if "label" in item.fields:
             actual.append(item.fields["label"].label)
-            if item.fields["label"].label == "NOT ENOUGH INFO" and cls != "NOT ENOUGH INFO":
-                if item.fields["metadata"].metadata["ner_missing"]:
-                    cls = "NOT ENOUGH INFO"
+            if args.ner_missing is not None:
+                if args.ner_missing == 'optimistic' and item.fields["label"].label == "NOT ENOUGH INFO" and cls != "NOT ENOUGH INFO":
+                    if item.fields["metadata"].metadata["ner_missing"]:
+                        cls = "NOT ENOUGH INFO"
+
+                if args.ner_missing == 'refutes' and item.fields["label"].label == "REFUTES":
+                    if item.fields["metadata"].metadata["ner_missing"]:
+                        cls = "NOT ENOUGH INFO"
+
+                if args.ner_missing == 'supports' and item.fields["label"].label == "SUPPORTS":
+                    if item.fields["metadata"].metadata["ner_missing"]:
+                        cls = "NOT ENOUGH INFO"
+
+                if args.ner_missing == 'all':
+                    if item.fields["metadata"].metadata["ner_missing"]:
+                        cls = "NOT ENOUGH INFO"
 
         predicted.append(cls)
 
@@ -96,6 +110,10 @@ if __name__ == "__main__":
     parser.add_argument('archive_file', type=str, help='/path/to/saved/db.db')
     parser.add_argument('in_file', type=str, help='/path/to/saved/db.db')
     parser.add_argument('--log', required=False, default=None,  type=str, help='/path/to/saved/db.db')
+
+    # ner based features
+    parser.add_argument('--ner_facts', required=False, default=False,  type=bool, help='include ner based facts or not')
+    parser.add_argument('--ner_missing', required=False, default=None, type=str, help='optimistic / refutes / supports / all handling of ner missing tags')
 
     parser.add_argument("--cuda-device", type=int, default=-1, help='id of GPU to use (if any)')
     parser.add_argument('-o', '--overrides',
