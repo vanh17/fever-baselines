@@ -46,14 +46,27 @@ class FEVERGoldFormatter(FeverFormatter):
             for evidence_group in line["evidence"]:
                 pages.extend([(ev[2],ev[3]) for ev in evidence_group])
 
+        fact = []
+        # handling ner tags
+        if 'fact' in line:
+            fact_dict = dict()
+            for item in line['fact']:
+                if item[0] in fact_dict:
+                    fact_dict[item[0]].append(item[1])
+                else:
+                    fact_dict[item[0]] = [item[1]]
+
+            for key in fact_dict:
+                fact.append(key + ' ' + ' '.join(fact_dict[key]))
+
         if self.filtering is not None:
             for page,_ in pages:
                 if self.filtering({"id":page}) is None:
                     return None
         if annotation is not None:
-            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label":self.label_schema.get_id(annotation),"label_text":annotation}
+            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text":annotation, "fact": fact, "ner_missing": line['ner_missing']}
         else:
-            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label":None,"label_text":None}
+            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": None, "label_text": None, "fact": fact, "ner_missing": line['ner_missing']}
  
 
 class FEVERPredictionsFormatter(FeverFormatter):

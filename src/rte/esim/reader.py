@@ -9,7 +9,7 @@ from allennlp.common import Params
 from allennlp.common.checks import ConfigurationError
 from allennlp.common.file_utils import cached_path
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
-from allennlp.data.fields import Field, TextField, LabelField
+from allennlp.data.fields import Field, TextField, LabelField, MetadataField
 from allennlp.data.instance import Instance
 from allennlp.data.token_indexers import ELMoTokenCharactersIndexer, SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Tokenizer, WordTokenizer
@@ -80,19 +80,22 @@ class FEVERReader(DatasetReader):
             else:
                 lines = set([self.get_doc_line(d[0],d[1]) for d in instance['evidence']])
                 premise = " ".join(lines)
+                premise = premise + " ".join(instance['fact'])
 
             if len(premise.strip()) == 0:
                 premise = ""
 
             hypothesis = instance["claim"]
             label = instance["label_text"]
-            yield self.text_to_instance(premise, hypothesis, label)
+            ner_missing = instance["ner_missing"]
+            yield self.text_to_instance(premise, hypothesis, label, ner_missing)
 
     @overrides
     def text_to_instance(self,  # type: ignore
                          premise: str,
                          hypothesis: str,
-                         label: str = None) -> Instance:
+                         label: str = None,
+                         ner_missing = False) -> Instance:
         # pylint: disable=arguments-differ
         fields: Dict[str, Field] = {}
         premise_tokens = self._wiki_tokenizer.tokenize(premise) if premise is not None else None
@@ -101,6 +104,7 @@ class FEVERReader(DatasetReader):
         fields['hypothesis'] = TextField(hypothesis_tokens, self._token_indexers)
         if label is not None:
             fields['label'] = LabelField(label)
+        fields['metadata'] = MetadataField({'ner_missing': ner_missing})
         return Instance(fields)
 
     @staticmethod
