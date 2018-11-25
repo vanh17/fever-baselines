@@ -48,6 +48,14 @@ def eval_model(db: FeverDocDB, args) -> Model:
 
     actual = []
     predicted = []
+    logfile1 = open("errors-supports-wrong.txt", "w+")
+    logfile2 = open("errors-supports-right.txt", "w+")
+    logfile3 = open("errors-supports-wrong-logits.txt", "w+")
+    logfile4 = open("errors-supports-right-logits.txt", "w+")
+    supports_right = []
+    supports_wrong = []
+    supports_right_logits = []
+    supports_wrong_logits = []
 
     if args.log is not None:
         f = open(args.log,"w+")
@@ -66,14 +74,6 @@ def eval_model(db: FeverDocDB, args) -> Model:
                     if item.fields["metadata"].metadata["ner_missing"]:
                         cls = "NOT ENOUGH INFO"
 
-                if args.ner_missing == 'refutes' and cls == "REFUTES":
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "NOT ENOUGH INFO"
-
-                if args.ner_missing == 'supports' and cls == "SUPPORTS":
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "NOT ENOUGH INFO"
-
                 if args.ner_missing == 'naive' and cls == 'SUPPORTS':
                     if item.fields["metadata"].metadata["ner_missing"]:
                         highest = np.argmax(prediction["label_probs"])
@@ -85,9 +85,22 @@ def eval_model(db: FeverDocDB, args) -> Model:
                         copy[highest] = prediction["label_probs"][lowest]
                         cls = model.vocab._index_to_token["labels"][np.argmax(copy)]
 
-                if args.ner_missing == 'all':
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "NOT ENOUGH INFO"
+                        original = prediction["label_probs"][highest]
+                        original_logits =  prediction["label_logits"][highest]
+                        chosen = copy[np.argmax(copy)]
+                        chosen_logits = prediction["label_logits"][np.argmax(copy)]
+                        difference = original - chosen
+                        difference_logits = original_logits - chosen_logits
+                        if item.fields["label"].label == "SUPPORTS" and cls != "SUPPORTS":
+                            logfile1.write("original:" + str(original) + " chosen:" + str(chosen) + " diff:" + str(difference) + "\n")
+                            logfile3.write("original:" + str(original_logits) + " chosen:" + str(chosen_logits) + " diff:" + str(difference_logits) + "\n")
+                            supports_wrong.append(difference)
+                            supports_wrong_logits.append(difference_logits)
+                        else:
+                            logfile2.write("original:" + str(original) + " chosen:" + str(chosen) + " diff:" + str(difference) + "\n")
+                            logfile4.write("original:" + str(original_logits) + " chosen:" + str(chosen_logits) + " diff:" + str(difference_logits) + "\n")
+                            supports_right.append(difference)
+                            supports_right_logits.append(difference_logits)
 
         predicted.append(cls)
 
@@ -100,6 +113,46 @@ def eval_model(db: FeverDocDB, args) -> Model:
     if args.log is not None:
         f.close()
 
+    logfile1.close()
+    logfile2.close()
+    logfile3.close()
+    logfile4.close()
+
+    logfile1 = open("supports-wrong.txt", "w+")
+    supports_wrong = sorted(supports_wrong)
+    for item in supports_wrong:
+        logfile1.write(str(item)+"\n")
+
+    print(str(np.mean(supports_wrong)))
+    logfile1.write(str(np.mean(supports_wrong)))
+    logfile1.close()
+
+    logfile1 = open("supports-wrong-logits.txt", "w+")
+    supports_wrong_logits = sorted(supports_wrong_logits)
+    for item in supports_wrong_logits:
+        logfile1.write(str(item)+"\n")
+
+    print(str(np.mean(supports_wrong_logits)))
+    logfile1.write(str(np.mean(supports_wrong_logits)))
+    logfile1.close()
+
+    logfile1 = open("supports-right-logits.txt", "w+")
+    supports_right_logits = sorted(supports_right_logits)
+    for item in supports_right_logits:
+        logfile1.write(str(item)+"\n")
+
+    print(str(np.mean(supports_right_logits)))
+    logfile1.write(str(np.mean(supports_right_logits)))
+    logfile1.close()
+
+    logfile1 = open("supports-right.txt", "w+")
+    supports_right = sorted(supports_right)
+    for item in supports_right:
+        logfile1.write(str(item)+"\n")
+
+    print(str(np.mean(supports_right)))
+    logfile1.write(str(np.mean(supports_right)))
+    logfile1.close()
 
     if len(actual) > 0:
         print(accuracy_score(actual, predicted))
