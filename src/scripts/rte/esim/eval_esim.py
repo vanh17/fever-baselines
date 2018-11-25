@@ -83,7 +83,6 @@ def eval_model(db: FeverDocDB, args) -> Model:
                             copy.append(pred)
 
                         copy[highest] = prediction["label_probs"][lowest]
-                        cls = model.vocab._index_to_token["labels"][np.argmax(copy)]
 
                         original = prediction["label_probs"][highest]
                         original_logits =  prediction["label_logits"][highest]
@@ -91,6 +90,10 @@ def eval_model(db: FeverDocDB, args) -> Model:
                         chosen_logits = prediction["label_logits"][np.argmax(copy)]
                         difference = original - chosen
                         difference_logits = original_logits - chosen_logits
+
+                        if difference_logits < 3.0:
+                            cls = model.vocab._index_to_token["labels"][np.argmax(copy)]
+
                         if item.fields["label"].label == "SUPPORTS" and cls != "SUPPORTS":
                             logfile1.write("original:" + str(original) + " chosen:" + str(chosen) + " diff:" + str(difference) + "\n")
                             logfile3.write("original:" + str(original_logits) + " chosen:" + str(chosen_logits) + " diff:" + str(difference_logits) + "\n")
