@@ -66,13 +66,24 @@ def eval_model(db: FeverDocDB, args) -> Model:
                     if item.fields["metadata"].metadata["ner_missing"]:
                         cls = "NOT ENOUGH INFO"
 
-                if args.ner_missing == 'refutes' and item.fields["label"].label == "REFUTES":
+                if args.ner_missing == 'refutes' and cls == "REFUTES":
                     if item.fields["metadata"].metadata["ner_missing"]:
                         cls = "NOT ENOUGH INFO"
 
-                if args.ner_missing == 'supports' and item.fields["label"].label == "SUPPORTS":
+                if args.ner_missing == 'supports' and cls == "SUPPORTS":
                     if item.fields["metadata"].metadata["ner_missing"]:
                         cls = "NOT ENOUGH INFO"
+
+                if args.ner_missing == 'naive' and cls == 'SUPPORTS':
+                    if item.fields["metadata"].metadata["ner_missing"]:
+                        highest = np.argmax(prediction["label_probs"])
+                        lowest = np.argmin(prediction["label_probs"])
+                        copy = []
+                        for pred in prediction["label_probs"]:
+                            copy.append(pred)
+
+                        copy[highest] = prediction["label_probs"][lowest]
+                        cls = model.vocab._index_to_token["labels"][np.argmax(copy)]
 
                 if args.ner_missing == 'all':
                     if item.fields["metadata"].metadata["ner_missing"]:
