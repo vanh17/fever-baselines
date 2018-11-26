@@ -16,52 +16,50 @@ The model was trained and evaluated on a Ubuntu 16.04 server. Training was perfo
 
 The model was evaluated on a Ubuntu 16.04 server without a GPU.
  
-## Evaluate on Docker
+## Evaluate on Ubuntu 16.04
 
-Step 1 : Setup the docker container
-
-a) use docker image of this repository pushed to [rahulroymattam@hub.docker.com](https://hub.docker.com/r/rahulroymattam/fever-baseline/)
+Step 1 : Manual Install
 
 ```
-#pull and run docker image
-sudo docker run -it -v fever-eval:/fever/data/ rahulroymattam/fever-baseline:small
-```
-or 
+conda create -n fever python=3.6
+source activate fever
 
-b) build docker image from the Dockerfile
-
-```
-# clone repository
+conda install pytorch torchvision -c pytorch
+ 
 git clone https://github.com/RahulRoyMattam/fever-baselines.git
 cd fever-baselines
-# build the docker image
-sudo docker build -t fever-image .
 
-# run the docker container
-sudo docker run -it -v fever-eval:/fever/data fever-image
+# run export LANG=C.UTF-8 if installation of DrQA fails
+pip install -r requirements.txt
 ```
 
-Step 2: Get fever.db by running the following command in your docker container
+Step 2: Get fever.db by running the following command
 
 ```
 #get fever.db
-wget -O /fever/data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
+wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
+mv fever-small/test.ns.ner.pages.p1.jsonl data/fever/test.ns.ner.pages.p1.jsonl
 ```
 
-Step 3: Run following scripts in the docker container to run the model against the Dev and Test sets and view confusion matrices.
+Step 3: Get trained models by running the following command
+```
+#get ESIM + ELMo trained model
+wget -O data/models/esim.tar.gz https://drive.google.com/open?id=1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV
+
+#get ESIM + ELMo + GloVe trained model
+wget -O data/models/esim-glove.tar.gz https://drive.google.com/open?id=1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX
+```
+
+Step 3: Run following scripts to run the model against the Test sets and view confusion matrices.
 
 ```
-#run oracle evaluation of label prediction on dev set
-PYTHONPATH=src python src/scripts/rte/da/eval_da.py data/fever/fever.db data/models/decomposable_attention.tar.gz data/fever/dev.ns.pages.p1.jsonl
 
-#run oracle evaluation of label prediction on test set
-PYTHONPATH=src python src/scripts/rte/da/eval_da.py data/fever/fever.db data/models/decomposable_attention.tar.gz data/fever/test.ns.pages.p1.jsonl
+#run oracle evaluation of label prediction on test set - ESIM + ELMo + named entity tuples + naive handling of missing named entities
+PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/test.ns.pages.p1.jsonl --ner_facts True --ner_missing naive
 
-#run evidence retrieval evaluation on dev Set
-PYTHONPATH=src python src/scripts/rte/da/eval_da.py data/fever/fever.db data/models/decomposable_attention.tar.gz data/fever/dev.sentences.p5.s5.jsonl
-    
-#run evidence retrieval evaluation on test set
-PYTHONPATH=src python src/scripts/rte/da/eval_da.py data/fever/fever.db data/models/decomposable_attention.tar.gz data/fever/test.sentences.p5.s5.jsonl
+#run oracle evaluation of label prediction on test set - ESIM + ELMo + GloVe + named entity tuples + naive handling of missing named entities
+PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim-glove.tar.gz data/fever/test.ns.pages.p1.jsonl --ner_facts True --ner_missing naive
+
 ```
 
 ## Find Out More
