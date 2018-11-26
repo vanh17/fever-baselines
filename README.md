@@ -49,8 +49,13 @@ wget -O data/models/esim.tar.gz https://drive.google.com/open?id=1oxVykTq_Rh63aJ
 #get ESIM + ELMo + GloVe trained model
 wget -O data/models/esim-glove.tar.gz https://drive.google.com/open?id=1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX
 ```
+Step 4: Get GloVe pre-trained vectors by running the following script
 
-Step 3: Run following scripts to run the model against the Test sets and view confusion matrices.
+```
+bash scripts/download-glove.sh
+```
+
+Step 5: Run following scripts to run the model against the Test sets and view confusion matrices.
 
 ```
 
