@@ -18,10 +18,10 @@ RUN mkdir /fever/data/models/
 VOLUME /fever/
 
 ADD requirements.txt /fever/
+ADD gdown.pl /fever/
 ADD src /fever/src/
 ADD config /fever/config/
 ADD scripts /fever/scripts/
-ADD trained-model/train_final  /fever/data/models/
 ADD fever-data-small /fever/data/fever-data/
 ADD fever-small /fever/data/fever/
 
@@ -46,7 +46,8 @@ RUN conda info -a
 RUN conda create -q -n fever python=3.6
 
 WORKDIR /fever/
-RUN . activate fever
-RUN conda install -y pytorch=0.3.1 torchvision -c pytorch
+RUN conda activate fever
+RUN apt-get install libffi-dev
+RUN conda install pytorch torchvision -c pytorch
 RUN pip install -r requirements.txt
 RUN python src/scripts/prepare_nltk.py
