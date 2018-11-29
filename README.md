@@ -60,10 +60,10 @@ Step 5: Run following scripts to run the model against the Test sets and view co
 ```
 
 #run oracle evaluation of label prediction on test set - ESIM + ELMo + named entity tuples + naive handling of missing named entities
-PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/test.ns.pages.p1.jsonl --ner_facts True --ner_missing naive
+PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/test.ns.ner.pages.p1.jsonl --ner_facts True --ner_missing naive
 
 #run oracle evaluation of label prediction on test set - ESIM + ELMo + GloVe + named entity tuples + naive handling of missing named entities
-PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim-glove.tar.gz data/fever/test.ns.pages.p1.jsonl --ner_facts True --ner_missing naive
+PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim-glove.tar.gz data/fever/test.ns.ner.pages.p1.jsonl --ner_facts True --ner_missing naive
 
 ```
 
