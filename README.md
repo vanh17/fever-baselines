@@ -43,7 +43,7 @@ sudo docker run -it -v fever-eval:/fever/data fever-image
 
 ### Download trained model and dataset 
 
-Step 2: Get fever.db by running the following command
+Step 2: Get fever.db by running the following command inside the docker container bash
 
 ```
 #get fever.db
@@ -51,7 +51,7 @@ wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki
 mv fever-small/test.ns.ner.pages.p1.jsonl data/fever/test.ns.ner.pages.p1.jsonl
 ```
 
-Step 3: Get trained models by running the following command
+Step 3: Get trained models by running the following command inside the docker container bash
 ```
 #get ESIM + ELMo trained model
 ./gdown.pl https://drive.google.com/file/d/1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV/view?usp=sharing data/models/esim.tar.gz
