@@ -48,7 +48,6 @@ Step 2: Get fever.db by running the following command inside the docker containe
 ```
 #get fever.db
 wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
-mv fever-small/test.ns.ner.pages.p1.jsonl data/fever/test.ns.ner.pages.p1.jsonl
 ```
 
 Step 3: Get trained models by running the following command inside the docker container bash
