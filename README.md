@@ -29,6 +29,9 @@ conda install pytorch torchvision -c pytorch
 git clone https://github.com/RahulRoyMattam/fever-baselines.git
 cd fever-baselines
 
+# apt-get install libffi-dev
+apt-get install libffi-dev
+
 # run export LANG=C.UTF-8 if installation of DrQA fails
 pip install -r requirements.txt
 ```
