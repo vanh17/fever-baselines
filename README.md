@@ -47,10 +47,10 @@ mv fever-small/test.ns.ner.pages.p1.jsonl data/fever/test.ns.ner.pages.p1.jsonl
 Step 3: Get trained models by running the following command
 ```
 #get ESIM + ELMo trained model
-wget -O data/models/esim.tar.gz https://drive.google.com/open?id=1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV
+wget -O data/models/esim.tar.gz https://drive.google.com/file/d/1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV/view?usp=sharing
 
 #get ESIM + ELMo + GloVe trained model
-wget -O data/models/esim-glove.tar.gz https://drive.google.com/open?id=1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX
+wget -O data/models/esim-glove.tar.gz https://drive.google.com/file/d/1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX/view?usp=sharing
 ```
 Step 4: Get GloVe pre-trained vectors by running the following script
 
