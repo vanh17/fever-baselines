@@ -53,10 +53,10 @@ wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki
 Step 3: Get trained models by running the following command inside the docker container bash
 ```
 #get ESIM + ELMo trained model
-./gdown.pl https://drive.google.com/file/d/1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV/view?usp=sharing data/models/esim.tar.gz
+wget -O data/models/esim.tar.gz https://www.dropbox.com/s/sifn7xjn94l54bn/esim.tar.gz?dl=0
 
 #get ESIM + ELMo + GloVe trained model
-./gdown.pl https://drive.google.com/file/d/1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX/view?usp=sharing data/models/esim-glove.tar.gz
+wget -O data/models/esim-glove.tar.gz https://www.dropbox.com/s/0vb75deq0lt5d1j/esim-glove.tar.gz?dl=0
 ```
 
 ### Evaluate Model
