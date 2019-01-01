@@ -5,9 +5,14 @@ typing
 overrides
 tqdm
 nltk
-allennlp==0.7.1
-flair==0.3.2
+allennlp==0.7.1 # updated to support ESIM
 pytz
 tensorboard-pytorch
 git+git://github.com/j6mes/drqa@parallel
 git+git://github.com/sheffieldnlp/fever-scorer@master
+
+# mysql connector for scripts/fake-science/*
+mysql-connector
+
+# flair package required only for running: scripts/retrieval/ner/get_ner.py
+# flair==0.3.2
