@@ -63,10 +63,16 @@ class FEVERGoldFormatter(FeverFormatter):
             for page,_ in pages:
                 if self.filtering({"id":page}) is None:
                     return None
-        if annotation is not None:
+
+
+        if annotation is not None and ('ner_missing' in line or 'fact' in line):
             return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text":annotation, "fact": fact, "ner_missing": line['ner_missing']}
-        else:
+        elif 'ner_missing' in line and 'fact' in line:
             return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": None, "label_text": None, "fact": fact, "ner_missing": line['ner_missing']}
+        elif annotation is not None:
+            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text":annotation}
+        else:
+            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": None, "label_text": None}
  
 
 class FEVERPredictionsFormatter(FeverFormatter):

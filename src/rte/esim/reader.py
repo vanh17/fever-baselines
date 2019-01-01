@@ -90,7 +90,11 @@ class FEVERReader(DatasetReader):
 
             hypothesis = instance["claim"]
             label = instance["label_text"]
-            ner_missing = instance["ner_missing"]
+
+            ner_missing = False
+            if 'ner_missing' in instance:
+                ner_missing = instance["ner_missing"]
+
             yield self.text_to_instance(premise, hypothesis, label, ner_missing)
 
     @overrides
