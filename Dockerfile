@@ -46,8 +46,9 @@ RUN conda info -a
 RUN conda create -q -n fever python=3.6
 
 WORKDIR /fever/
-RUN conda activate fever
+RUN . activate fever
 RUN apt-get install libffi-dev
-RUN conda install pytorch torchvision -c pytorch
-RUN pip install -r requirements.txt
-RUN python src/scripts/prepare_nltk.py
+
+RUN ["/bin/bash", "-c", "source activate fever && conda install pytorch torchvision -c pytorch"]
+RUN ["/bin/bash", "-c", "source activate fever && pip install -r requirements.txt"]
+RUN ["/bin/bash", "-c", "source activate fever && python src/scripts/prepare_nltk.py"]

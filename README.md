@@ -16,52 +16,58 @@ The model was trained and evaluated on a Ubuntu 16.04 server. Training was perfo
 
 The model was evaluated on a Ubuntu 16.04 server without a GPU.
  
-## Evaluate on Ubuntu 16.04
+## Evaluate on Docker
 
-Step 1 : Manual Install
+Step 1 : Setup the docker container
+
+a) use docker image of this repository pushed to [rahulroymattam@hub.docker.com](https://hub.docker.com/r/rahulroymattam/fever-esim/)
 
 ```
-conda create -n fever python=3.6
-source activate fever
+#pull and run docker image
+sudo docker run -it -v fever-eval:/fever/data/ rahulroymattam/fever-esim:latest
+```
+or 
 
-conda install pytorch torchvision -c pytorch
- 
+b) build docker image from the Dockerfile
+
+```
+# clone repository
 git clone https://github.com/RahulRoyMattam/fever-baselines.git
 cd fever-baselines
+# build the docker image
+sudo docker build -t fever-image .
 
-# apt-get install libffi-dev
-apt-get install libffi-dev
-
-# run export LANG=C.UTF-8 if installation of DrQA fails
-pip install -r requirements.txt
+# run the docker container
+sudo docker run -it -v fever-eval:/fever/data fever-image
 ```
 
-Step 2: Get fever.db by running the following command
+### Download trained model and dataset 
+
+Step 2: Get fever.db by running the following command inside the docker container bash
 
 ```
 #get fever.db
 wget -O data/fever/fever.db https://s3-eu-west-1.amazonaws.com/fever.public/wiki_index/fever.db
-mv fever-small/test.ns.ner.pages.p1.jsonl data/fever/test.ns.ner.pages.p1.jsonl
 ```
 
-Step 3: Get trained models by running the following command
+Step 3: Get trained models by running the following command inside the docker container bash
 ```
 #get ESIM + ELMo trained model
-wget -O data/models/esim.tar.gz https://drive.google.com/file/d/1oxVykTq_Rh63aJZkcv7OhozaIUm6KNIV/view?usp=sharing
+wget -O data/models/esim.tar.gz https://www.dropbox.com/s/sifn7xjn94l54bn/esim.tar.gz?dl=0
 
 #get ESIM + ELMo + GloVe trained model
-wget -O data/models/esim-glove.tar.gz https://drive.google.com/file/d/1nh23WdqUS4z7yu-3LWhMrdVWT3t26gEX/view?usp=sharing
-```
-Step 4: Get GloVe pre-trained vectors by running the following script
-
-```
-bash scripts/download-glove.sh
+wget -O data/models/esim-glove.tar.gz https://www.dropbox.com/s/0vb75deq0lt5d1j/esim-glove.tar.gz?dl=0
 ```
 
-Step 5: Run following scripts to run the model against the Test sets and view confusion matrices.
+### Evaluate Model
+
+Step 5: Run following scripts inside the docker container bash to run the model against the Test sets and view results.
 
 ```
+# activate conda environment before runnning evaluation scripts
+source activate fever
 
+# Note: Wait three to four minutes for spacy to download missing files.
 #run oracle evaluation of label prediction on test set - ESIM + ELMo + named entity tuples + naive handling of missing named entities
 PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/test.ns.ner.pages.p1.jsonl --ner_facts True --ner_missing naive
 
