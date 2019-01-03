@@ -19,6 +19,7 @@ class CSVReader(Reader):
         r = csv.DictReader(fp)
         return [line for line in r]
 
+
 class JSONReader(Reader):
     def process(self,fp):
         return json.load(fp)

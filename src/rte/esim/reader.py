@@ -54,7 +54,7 @@ class FEVERReader(DatasetReader):
 
         self.db = db
 
-        self.formatter = FEVERGoldFormatter(set(self.db.get_doc_ids()), FEVERLabelSchema(),filtering=filtering)
+        self.formatter = FEVERGoldFormatter(set(self.db.get_doc_ids()), FEVERLabelSchema(), filtering=filtering)
         self.reader = JSONLineReader()
 
 
@@ -80,7 +80,11 @@ class FEVERReader(DatasetReader):
                 pages = set(ev[0] for ev in instance["evidence"])
                 premise = " ".join([self.db.get_doc_text(p) for p in pages])
             else:
-                lines = set([self.get_doc_line(d[0],d[1]) for d in instance['evidence']])
+                if instance.domain == "source":
+                    lines = set([self.get_doc_line(d[0], d[1]) for d in instance['evidence']])
+                else:
+                    lines = set(ev[0] for ev in instance["evidence"])
+
                 premise = " ".join(lines)
                 if self._ner_facts:
                     premise = premise + " ".join(instance['fact'])

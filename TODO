@@ -1,3 +1,7 @@
-add mysql reader -> convert to jsonl file
+pre process claims for training.
+use claims for training.
+
 re implement esim code
 remove DA code
+
+add mysql reader -> convert to jsonl file -> done

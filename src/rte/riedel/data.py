@@ -11,6 +11,7 @@ from retrieval.filter_uninformative import uninformative
 def preprocess(p):
     return p.replace(" ","_").replace("(","-LRB-").replace(")","-RRB-").replace(":","-COLON-").split("#")[0]
 
+
 class FeverFormatter(Formatter):
     def __init__(self, index, label_schema, tokenizer=None,filtering=None):
         super().__init__(label_schema)
@@ -31,46 +32,38 @@ class FeverFormatter(Formatter):
     def nltk_tokenizer(self,text):
         return " ".join(word_tokenize(text))
 
+
 class FEVERGoldFormatter(FeverFormatter):
     def format_line(self,line):
         annotation = None
-        if "label" in line:
-            annotation = line["label"]
         pages = []
 
-        if 'predicted_sentences' in line:
-            pages.extend([(ev[0], ev[1]) for ev in line["predicted_sentences"]])
-        elif 'predicted_pages' in line:
-            pages.extend([(ev[0],-1) for ev in line["predicted_pages"]])
+        if "sourceID" in line and "student" in line:
+            # handle custom target domain
+            domain = "target"
+            annotation = "SUPPORTS"
+            pages.extend([(ev[0], -1) for ev in line["evidence"]])
         else:
-            for evidence_group in line["evidence"]:
-                pages.extend([(ev[2],ev[3]) for ev in evidence_group])
+            # handle fever db source domain
+            domain = "source"
+            if "label" in line:
+                annotation = line["label"]
 
-        fact = []
-        # handling ner tags
-        if 'fact' in line:
-            fact_dict = dict()
-            for item in line['fact']:
-                if item[0] in fact_dict:
-                    fact_dict[item[0]].append(item[1])
-                else:
-                    fact_dict[item[0]] = [item[1]]
+            if 'predicted_sentences' in line:
+                pages.extend([(ev[0], ev[1]) for ev in line["predicted_sentences"]])
+            elif 'predicted_pages' in line:
+                pages.extend([(ev[0], -1) for ev in line["predicted_pages"]])
+            else:
+                for evidence_group in line["evidence"]:
+                    pages.extend([(ev[2], ev[3]) for ev in evidence_group])
 
-            for key in fact_dict:
-                fact.append(key + ' ' + ' '.join(fact_dict[key]))
+            if self.filtering is not None:
+                for page, _ in pages:
+                    if self.filtering({"id": page}) is None:
+                        return None
 
-        if self.filtering is not None:
-            for page,_ in pages:
-                if self.filtering({"id":page}) is None:
-                    return None
-
-
-        if annotation is not None and ('ner_missing' in line or 'fact' in line):
-            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text":annotation, "fact": fact, "ner_missing": line['ner_missing']}
-        elif 'ner_missing' in line and 'fact' in line:
-            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": None, "label_text": None, "fact": fact, "ner_missing": line['ner_missing']}
-        elif annotation is not None:
-            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text":annotation}
+        if annotation is not None:
+            return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": self.label_schema.get_id(annotation), "label_text": annotation, "domain": domain}
         else:
             return {"claim":self.tokenize(line["claim"]), "evidence": pages, "label": None, "label_text": None}
  
