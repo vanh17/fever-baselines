@@ -80,7 +80,7 @@ class FEVERReader(DatasetReader):
                 pages = set(ev[0] for ev in instance["evidence"])
                 premise = " ".join([self.db.get_doc_text(p) for p in pages])
             else:
-                if instance.domain == "source":
+                if instance["domain"] == "source":
                     lines = set([self.get_doc_line(d[0], d[1]) for d in instance['evidence']])
                 else:
                     lines = set(ev[0] for ev in instance["evidence"])
