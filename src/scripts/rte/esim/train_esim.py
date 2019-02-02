@@ -14,6 +14,7 @@ from common.util.random import SimpleRandom
 from retrieval.fever_doc_db import FeverDocDB
 from rte.esim.reader import FEVERReader
 
+import scripts.rte.esim.esim_extended
 import argparse
 import logging
 import sys
@@ -94,7 +95,7 @@ def train_model(db: FeverDocDB, params: Union[Params, Dict[str, Any]], cuda_devi
     vocab.save_to_files(os.path.join(serialization_dir, "vocabulary"))
 
     try:
-        model = Model.from_params(params.pop('model'), vocab=vocab)
+        model = Model.by_name("esimcustom").from_params(params.pop('model'), vocab=vocab)
         iterator = DataIterator.from_params(params.pop("iterator"))
     except Exception as e:
         logger.info("Crashed with error: " + str(e))

@@ -43,8 +43,10 @@ class FEVERReader(DatasetReader):
                  wiki_tokenizer: Tokenizer = None,
                  claim_tokenizer: Tokenizer = None,
                  token_indexers: Dict[str, TokenIndexer] = None,
+                 lazy: bool = False,
                  ner_facts = False,
                  filtering: str = None) -> None:
+        super().__init__(lazy)
         self._sentence_level = sentence_level
         self._ner_facts = ner_facts
         self._wiki_tokenizer = wiki_tokenizer or WordTokenizer()
