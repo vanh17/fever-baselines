@@ -1,6 +1,8 @@
 from typing import Dict, Optional, List, Any
 
 import torch
+import json
+import datetime
 
 from allennlp.common.checks import check_dimensions_match
 from allennlp.data import Vocabulary
@@ -124,89 +126,117 @@ class ESIMCUSTOM(Model):
         loss : torch.FloatTensor, optional
             A scalar loss to be optimised.
         """
-        embedded_premise = self._text_field_embedder(premise)
-        embedded_hypothesis = self._text_field_embedder(hypothesis)
-        premise_mask = get_text_field_mask(premise).float()
-        hypothesis_mask = get_text_field_mask(hypothesis).float()
 
-        # apply dropout for LSTM
-        if self.rnn_input_dropout:
-            embedded_premise = self.rnn_input_dropout(embedded_premise)
-            embedded_hypothesis = self.rnn_input_dropout(embedded_hypothesis)
+        try:
+            embedded_premise = self._text_field_embedder(premise)
+            embedded_hypothesis = self._text_field_embedder(hypothesis)
+            premise_mask = get_text_field_mask(premise).float()
+            hypothesis_mask = get_text_field_mask(hypothesis).float()
 
-        # encode premise and hypothesis
-        encoded_premise = self._encoder(embedded_premise, premise_mask)
-        encoded_hypothesis = self._encoder(embedded_hypothesis, hypothesis_mask)
+            # apply dropout for LSTM
+            if self.rnn_input_dropout:
+                embedded_premise = self.rnn_input_dropout(embedded_premise)
+                embedded_hypothesis = self.rnn_input_dropout(embedded_hypothesis)
 
-        # Shape: (batch_size, premise_length, hypothesis_length)
-        similarity_matrix = self._matrix_attention(encoded_premise, encoded_hypothesis)
+            # encode premise and hypothesis
+            encoded_premise = self._encoder(embedded_premise, premise_mask)
+            encoded_hypothesis = self._encoder(embedded_hypothesis, hypothesis_mask)
 
-        # Shape: (batch_size, premise_length, hypothesis_length)
-        p2h_attention = masked_softmax(similarity_matrix, hypothesis_mask)
-        # Shape: (batch_size, premise_length, embedding_dim)
-        attended_hypothesis = weighted_sum(encoded_hypothesis, p2h_attention)
+            # Shape: (batch_size, premise_length, hypothesis_length)
+            similarity_matrix = self._matrix_attention(encoded_premise, encoded_hypothesis)
 
-        # Shape: (batch_size, hypothesis_length, premise_length)
-        h2p_attention = masked_softmax(similarity_matrix.transpose(1, 2).contiguous(), premise_mask)
-        # Shape: (batch_size, hypothesis_length, embedding_dim)
-        attended_premise = weighted_sum(encoded_premise, h2p_attention)
+            # Shape: (batch_size, premise_length, hypothesis_length)
+            p2h_attention = masked_softmax(similarity_matrix, hypothesis_mask)
+            # Shape: (batch_size, premise_length, embedding_dim)
+            attended_hypothesis = weighted_sum(encoded_hypothesis, p2h_attention)
 
-        # the "enhancement" layer
-        premise_enhanced = torch.cat(
+            # Shape: (batch_size, hypothesis_length, premise_length)
+            h2p_attention = masked_softmax(similarity_matrix.transpose(1, 2).contiguous(), premise_mask)
+            # Shape: (batch_size, hypothesis_length, embedding_dim)
+            attended_premise = weighted_sum(encoded_premise, h2p_attention)
+
+            # the "enhancement" layer
+            premise_enhanced = torch.cat(
                 [encoded_premise, attended_hypothesis,
                  encoded_premise - attended_hypothesis,
                  encoded_premise * attended_hypothesis],
                 dim=-1
-        )
-        hypothesis_enhanced = torch.cat(
+            )
+            hypothesis_enhanced = torch.cat(
                 [encoded_hypothesis, attended_premise,
                  encoded_hypothesis - attended_premise,
                  encoded_hypothesis * attended_premise],
                 dim=-1
-        )
+            )
 
-        # The projection layer down to the model dimension.  Dropout is not applied before
-        # projection.
-        projected_enhanced_premise = self._projection_feedforward(premise_enhanced)
-        projected_enhanced_hypothesis = self._projection_feedforward(hypothesis_enhanced)
+            # The projection layer down to the model dimension.  Dropout is not applied before
+            # projection.
+            projected_enhanced_premise = self._projection_feedforward(premise_enhanced)
+            projected_enhanced_hypothesis = self._projection_feedforward(hypothesis_enhanced)
 
-        # Run the inference layer
-        if self.rnn_input_dropout:
-            projected_enhanced_premise = self.rnn_input_dropout(projected_enhanced_premise)
-            projected_enhanced_hypothesis = self.rnn_input_dropout(projected_enhanced_hypothesis)
-        v_ai = self._inference_encoder(projected_enhanced_premise, premise_mask)
-        v_bi = self._inference_encoder(projected_enhanced_hypothesis, hypothesis_mask)
+            # Run the inference layer
+            if self.rnn_input_dropout:
+                projected_enhanced_premise = self.rnn_input_dropout(projected_enhanced_premise)
+                projected_enhanced_hypothesis = self.rnn_input_dropout(projected_enhanced_hypothesis)
+            v_ai = self._inference_encoder(projected_enhanced_premise, premise_mask)
+            v_bi = self._inference_encoder(projected_enhanced_hypothesis, hypothesis_mask)
 
-        # The pooling layer -- max and avg pooling.
-        # (batch_size, model_dim)
-        v_a_max, _ = replace_masked_values(
+            # The pooling layer -- max and avg pooling.
+            # (batch_size, model_dim)
+            v_a_max, _ = replace_masked_values(
                 v_ai, premise_mask.unsqueeze(-1), -1e7
-        ).max(dim=1)
-        v_b_max, _ = replace_masked_values(
+            ).max(dim=1)
+            v_b_max, _ = replace_masked_values(
                 v_bi, hypothesis_mask.unsqueeze(-1), -1e7
-        ).max(dim=1)
+            ).max(dim=1)
 
-        v_a_avg = torch.sum(v_ai * premise_mask.unsqueeze(-1), dim=1) / torch.sum(
+            v_a_avg = torch.sum(v_ai * premise_mask.unsqueeze(-1), dim=1) / torch.sum(
                 premise_mask, 1, keepdim=True
-        )
-        v_b_avg = torch.sum(v_bi * hypothesis_mask.unsqueeze(-1), dim=1) / torch.sum(
+            )
+            v_b_avg = torch.sum(v_bi * hypothesis_mask.unsqueeze(-1), dim=1) / torch.sum(
                 hypothesis_mask, 1, keepdim=True
-        )
+            )
 
-        # Now concat
-        # (batch_size, model_dim * 2 * 4)
-        v_all = torch.cat([v_a_avg, v_a_max, v_b_avg, v_b_max], dim=1)
+            # Now concat
+            # (batch_size, model_dim * 2 * 4)
+            v_all = torch.cat([v_a_avg, v_a_max, v_b_avg, v_b_max], dim=1)
 
-        # the final MLP -- apply dropout to input, and MLP applies to output & hidden
-        if self.dropout:
-            v_all = self.dropout(v_all)
+            # the final MLP -- apply dropout to input, and MLP applies to output & hidden
+            if self.dropout:
+                v_all = self.dropout(v_all)
 
-        output_hidden = self._output_feedforward(v_all)
-        label_logits = self._output_logit(output_hidden)
+            output_hidden = self._output_feedforward(v_all)
+            label_logits = self._output_logit(output_hidden)
+
+        except Exception as e:
+            print('Exception 1:' + str(e))
+            try:
+                # the size is hardcoded because unpacking the tensor throws a cuda error
+                # the following code will fail if the batch size is different!
+                # cuda0 = torch.device('cuda:0')
+                # label_logits = torch.ones([32, 3], dtype=torch.float64, device=cuda0, requires_grad=True)
+                label_logits = torch.ones([32, 3], dtype=torch.float64, requires_grad=True)
+            except Exception as ex:
+                print("Exception 2:" + str(ex))
+                torch.cuda.empty_cache()
+                # cuda0 = torch.device('cuda:0')
+                # label_logits = torch.ones([32, 3], dtype=torch.float64, device=cuda0, requires_grad=True)
+                label_logits = torch.ones([32, 3], dtype=torch.float64, requires_grad=True)
+
+            s_metadata = []
+            for meta in metadata:
+                temp_dict = {}
+                for key, val in meta.items():
+                    temp_dict[key] = str(val)
+
+                s_metadata.append(temp_dict)
+
+            current_dt = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M:%S")
+            with open("error-"+current_dt+".txt", 'w+') as file:
+                file.write(json.dumps(s_metadata, indent=4))
+
         label_probs = torch.nn.functional.softmax(label_logits, dim=-1)
-
         output_dict = {"label_logits": label_logits, "label_probs": label_probs}
-
         if label is not None:
             loss = self._loss(label_logits, label.long().view(-1))
             self._accuracy(label_logits, label)

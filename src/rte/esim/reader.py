@@ -117,7 +117,7 @@ class FEVERReader(DatasetReader):
         fields['hypothesis'] = TextField(hypothesis_tokens, self._token_indexers)
         if label is not None:
             fields['label'] = LabelField(label)
-        fields['metadata'] = MetadataField({'ner_missing': ner_missing})
+        fields['metadata'] = MetadataField({'premise_tokens': premise_tokens, 'hypothesis_tokens': hypothesis_tokens})
         return Instance(fields)
 
     @staticmethod
