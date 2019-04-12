@@ -40,12 +40,12 @@ class EvalEsim(object):
         self.model = archive.model
         self.model.eval()
 
-        self.reader = FEVERReader(db,
+        self.reader = FEVERReader(self.db,
                              sentence_level=ds_params.pop("sentence_level", False),
                              wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
                              claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
                              token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {})),
-                             ner_facts=args.ner_facts)
+                             ner_facts=self.args.ner_facts)
 
     def eval_model(self) -> Model:
         logger.info("Reading training data from %s", self.args.in_file)
@@ -117,12 +117,26 @@ class EvalEsim(object):
     def eval_instance(self, premise, hypothesis):
         item = self.reader.text_to_instance(premise, hypothesis)
         if item.fields["premise"] is None or item.fields["premise"].sequence_length() == 0:
-            cls = "NOT ENOUGH INFO"
+            output = {"prediction": "NOT ENOUGH INFO",
+                      "logits": {"supports": None,
+                                 "refutes": None,
+                                 "nei": None},
+                      "probs": {"supports": None,
+                                "refutes": None,
+                                "nei": None}}
         else:
             prediction = self.model.forward_on_instance(item)
             cls = self.model.vocab._index_to_token["labels"][np.argmax(prediction["label_probs"])]
+            output = {"prediction": cls,
+                      "logits": {"supports": str(prediction["label_logits"][0]),
+                                 "refutes": str(prediction["label_logits"][1]),
+                                 "nei": str(prediction["label_logits"][2])},
+                      "probs": {"supports":  str(prediction["label_probs"][0]),
+                                "refutes":  str(prediction["label_probs"][1]),
+                                "nei": str(prediction["label_probs"][2])}
+                      }
 
-        return cls
+        return output
 
 
 if __name__ == "__main__":

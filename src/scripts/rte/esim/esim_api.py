@@ -5,6 +5,7 @@ from flask import request
 import logging
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 from scripts.rte.esim.eval_esim import EvalEsim
+import json
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
@@ -36,15 +37,14 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    json = request.get_json()
-    result = ""
+    data = request.get_json()
     try:
-        global result
-        result = esim.eval_instance(json["text"], json["text"])
+        # global result
+        result = esim.eval_instance(data["evidence"], data["claim"])
     except Exception as e:
-        global result
+        # global result
         result = "error occurred: " + str(e)
-    return result
+    return json.dumps(result)
 
 
 app.run(host="localhost", port=8000)
