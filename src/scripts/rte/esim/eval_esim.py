@@ -24,90 +24,105 @@ import numpy as np
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
+
 # PYTHONPATH=src python src/scripts/rte/esim/eval_esim.py data/fever/fever.db data/models/esim.tar.gz data/fever/dev.ns.pages.p1.jsonl
+class EvalEsim(object):
 
-def eval_model(db: FeverDocDB, args) -> Model:
-    archive = load_archive(args.archive_file, cuda_device=args.cuda_device)
+    def __init__(self, args):
+        self.db = FeverDocDB(args.db)
+        self.args = args
 
-    config = archive.config
-    ds_params = config["dataset_reader"]
+        archive = load_archive(args.archive_file, cuda_device=args.cuda_device)
 
-    model = archive.model
-    model.eval()
+        config = archive.config
+        ds_params = config["dataset_reader"]
 
-    reader = FEVERReader(db,
-                                 sentence_level=ds_params.pop("sentence_level",False),
-                                 wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
-                                 claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
-                                 token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {})),
-                                 ner_facts=args.ner_facts
-                         )
+        self.model = archive.model
+        self.model.eval()
 
-    logger.info("Reading training data from %s", args.in_file)
-    data = reader.read(args.in_file)
+        self.reader = FEVERReader(db,
+                             sentence_level=ds_params.pop("sentence_level", False),
+                             wiki_tokenizer=Tokenizer.from_params(ds_params.pop('wiki_tokenizer', {})),
+                             claim_tokenizer=Tokenizer.from_params(ds_params.pop('claim_tokenizer', {})),
+                             token_indexers=FEVERReader.custom_dict_from_params(ds_params.pop('token_indexers', {})),
+                             ner_facts=args.ner_facts)
 
-    actual = []
-    predicted = []
+    def eval_model(self) -> Model:
+        logger.info("Reading training data from %s", self.args.in_file)
+        data = self.reader.read(self.args.in_file)
 
-    if args.log is not None:
-        f = open(args.log,"w+")
+        actual = []
+        predicted = []
 
-    for item in tqdm(data):
+        if self.args.log is not None:
+            f = open(self.args.log, "w+")
+
+        for item in tqdm(data):
+            if item.fields["premise"] is None or item.fields["premise"].sequence_length() == 0:
+                cls = "NOT ENOUGH INFO"
+            else:
+                prediction = self.model.forward_on_instance(item)
+                cls = self.model.vocab._index_to_token["labels"][np.argmax(prediction["label_probs"])]
+
+            if "label" in item.fields:
+                actual.append(item.fields["label"].label)
+                if self.args.ner_missing is not None:
+                    if self.args.ner_missing == 'oracle' and item.fields["label"].label == "NOT ENOUGH INFO" and cls != "NOT ENOUGH INFO":
+                        if item.fields["metadata"].metadata["ner_missing"]:
+                            cls = "NOT ENOUGH INFO"
+
+                    if self.args.ner_missing == 'oracle' and item.fields["label"].label == "SUPPORTS" and cls != "SUPPORTS":
+                        if item.fields["metadata"].metadata["ner_missing"]:
+                            cls = "SUPPORTS"
+
+                    if self.args.ner_missing == 'oracle' and item.fields["label"].label == "REFUTES" and cls != "REFUTES":
+                        if item.fields["metadata"].metadata["ner_missing"]:
+                            cls = "REFUTES"
+
+                    if self.args.ner_missing == 'naive' and cls == 'SUPPORTS':
+                        if item.fields["metadata"].metadata["ner_missing"]:
+                            highest = np.argmax(prediction["label_probs"])
+                            lowest = np.argmin(prediction["label_probs"])
+                            copy = []
+                            for pred in prediction["label_probs"]:
+                                copy.append(pred)
+
+                            copy[highest] = prediction["label_probs"][lowest]
+
+                            original_logits = prediction["label_logits"][highest]
+                            chosen_logits = prediction["label_logits"][np.argmax(copy)]
+                            difference_logits = original_logits - chosen_logits
+
+                            if difference_logits < 3.0:
+                                cls = self.model.vocab._index_to_token["labels"][np.argmax(copy)]
+
+            predicted.append(cls)
+
+            if self.args.log is not None:
+                if "label" in item.fields:
+                    f.write(json.dumps({"actual": item.fields["label"].label, "predicted": cls}) + "\n")
+                else:
+                    f.write(json.dumps({"predicted": cls}) + "\n")
+
+        if self.args.log is not None:
+            f.close()
+
+        if len(actual) > 0:
+            print(accuracy_score(actual, predicted))
+            print(classification_report(actual, predicted))
+            print(confusion_matrix(actual, predicted))
+
+        return self.model
+
+    def eval_instance(self, premise, hypothesis):
+        item = self.reader.text_to_instance(premise, hypothesis)
         if item.fields["premise"] is None or item.fields["premise"].sequence_length() == 0:
             cls = "NOT ENOUGH INFO"
         else:
-            prediction = model.forward_on_instance(item)
-            cls = model.vocab._index_to_token["labels"][np.argmax(prediction["label_probs"])]
+            prediction = self.model.forward_on_instance(item)
+            cls = self.model.vocab._index_to_token["labels"][np.argmax(prediction["label_probs"])]
 
-        if "label" in item.fields:
-            actual.append(item.fields["label"].label)
-            if args.ner_missing is not None:
-                if args.ner_missing == 'oracle' and item.fields["label"].label == "NOT ENOUGH INFO" and cls != "NOT ENOUGH INFO":
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "NOT ENOUGH INFO"
-
-                if args.ner_missing == 'oracle' and item.fields["label"].label == "SUPPORTS" and cls != "SUPPORTS":
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "SUPPORTS"
-
-                if args.ner_missing == 'oracle' and item.fields["label"].label == "REFUTES" and cls != "REFUTES":
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        cls = "REFUTES"
-
-                if args.ner_missing == 'naive' and cls == 'SUPPORTS':
-                    if item.fields["metadata"].metadata["ner_missing"]:
-                        highest = np.argmax(prediction["label_probs"])
-                        lowest = np.argmin(prediction["label_probs"])
-                        copy = []
-                        for pred in prediction["label_probs"]:
-                            copy.append(pred)
-
-                        copy[highest] = prediction["label_probs"][lowest]
-
-                        original_logits =  prediction["label_logits"][highest]
-                        chosen_logits = prediction["label_logits"][np.argmax(copy)]
-                        difference_logits = original_logits - chosen_logits
-
-                        if difference_logits < 3.0:
-                            cls = model.vocab._index_to_token["labels"][np.argmax(copy)]
-
-        predicted.append(cls)
-
-        if args.log is not None:
-            if "label" in item.fields:
-                f.write(json.dumps({"actual":item.fields["label"].label,"predicted":cls})+"\n")
-            else:
-                f.write(json.dumps({"predicted":cls})+"\n")
-
-    if args.log is not None:
-        f.close()
-
-    if len(actual) > 0:
-        print(accuracy_score(actual, predicted))
-        print(classification_report(actual, predicted))
-        print(confusion_matrix(actual, predicted))
-
-    return model
+        return cls
 
 
 if __name__ == "__main__":
@@ -133,8 +148,5 @@ if __name__ == "__main__":
                            default="",
                            help='a HOCON structure used to override the experiment configuration')
 
-
-
-    args = parser.parse_args()
-    db = FeverDocDB(args.db)
-    eval_model(db,args)
+    esim = EvalEsim(parser.parse_args())
+    esim.eval_model()

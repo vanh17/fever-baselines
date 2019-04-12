@@ -10,9 +10,10 @@ pytz
 tensorboard-pytorch
 git+git://github.com/j6mes/drqa@parallel
 git+git://github.com/sheffieldnlp/fever-scorer@master
+flask
 
 # mysql connector for scripts/fake-science/*
-mysql-connector
+# mysql-connector
 
 # flair package required only for running: scripts/retrieval/ner/get_ner.py
 # flair==0.3.2
