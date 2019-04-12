@@ -40,10 +40,10 @@ class InputExample(object):
 class FakeScienceData(object):
     """Processor for the fake science data set."""
     def __init__(self,
-                 db: FeverDocDB,
+                 db: str,
                  filtering: str = None
                  ):
-        self.db = db
+        self.db = FeverDocDB(db)
         self.formatter = FEVERGoldFormatter(set(self.db.get_doc_ids()), FEVERLabelSchema(), filtering=filtering)
         self.reader = JSONLineReader()
 
@@ -64,18 +64,18 @@ class FakeScienceData(object):
             if instance is None:
                 continue
 
-            if not self._sentence_level:
-                pages = set(ev[0] for ev in instance["evidence"])
-                premise = " ".join([self.db.get_doc_text(p) for p in pages])
-            else:
-                if instance["domain"] == "source":
-                    lines = set([self.get_doc_line(d[0], d[1]) for d in instance['evidence']])
-                else:
-                    lines = set(ev[0] for ev in instance["evidence"])
+            if instance["domain"] == "source":
+                lines = []
+                for d in instance['evidence']:
+                    if d[0] is None:
+                        continue
+                    else:
+                        lines.append(self.get_doc_line(d[0], d[1]))
 
-                premise = " ".join(lines)
-                if self._ner_facts:
-                    premise = premise + " ".join(instance['fact'])
+            else:
+                lines = set(ev[0] for ev in instance["evidence"])
+
+            premise = " ".join(lines)
 
             if len(premise.strip()) == 0:
                 premise = ""
@@ -92,7 +92,7 @@ class FakeScienceData(object):
 
     def get_labels(self):
         """See base class."""
-        return FEVERLabelSchema()
+        return ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"]
 
     def _create_examples(self, lines):
         """Creates examples for the training and dev sets."""

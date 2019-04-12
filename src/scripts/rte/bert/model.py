@@ -15,6 +15,7 @@ from pytorch_pretrained_bert.file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 from pytorch_pretrained_bert.modeling import BertForSequenceClassification, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.optimization import BertAdam
+
 from rte.bert.reader import FakeScienceData
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -195,9 +196,6 @@ def bert():
     parser.add_argument("--do_train",
                         action='store_true',
                         help="Whether to run training.")
-    parser.add_argument("--do_eval",
-                        action='store_true',
-                        help="Whether to run eval on the dev set.")
     parser.add_argument("--do_test",
                         action='store_true',
                         help="Whether to run eval on the dev set.")
@@ -205,7 +203,7 @@ def bert():
                         action='store_true',
                         help="Set this flag if you are using an uncased model.")
     parser.add_argument("--train_batch_size",
-                        default=32,
+                        default=1,
                         type=int,
                         help="Total batch size for training.")
     parser.add_argument("--eval_batch_size",
@@ -217,7 +215,7 @@ def bert():
                         type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs",
-                        default=3.0,
+                        default=1.0,
                         type=float,
                         help="Total number of training epochs to perform.")
     parser.add_argument("--warmup_proportion",
@@ -272,8 +270,8 @@ def bert():
     if n_gpu > 0:
         torch.cuda.manual_seed_all(args.seed)
 
-    if not args.do_train and not args.do_eval and not args.do_test:
-        raise ValueError("At least one of `do_train` or `do_eval` or `do_test` must be True.")
+    if not args.do_train and not args.do_test:
+        raise ValueError("At least one of `do_train` or `do_test` must be supplied as an argument.")
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train:
         raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
@@ -380,7 +378,7 @@ def bert():
         model.load_state_dict(torch.load(output_model_file))
         model.to(device)
 
-    if args.do_eval or args.do_test:
+    if args.do_test:
 
         # Load a trained model and config that you have fine-tuned
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME)
@@ -443,20 +441,19 @@ def bert():
         result['global_step'] = global_step
         result['loss'] = loss
 
-        output_eval_file = os.path.join(args.output_dir, "eval_results.txt" if args.do_eval else "test_results.txt")
+        output_eval_file = os.path.join(args.output_dir, "test_results.txt")
         with open(output_eval_file, "w") as writer:
             logger.info("***** Eval results *****")
             for key in sorted(result.keys()):
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        if args.do_test:
-            output_eval_file = os.path.join(args.output_dir, "eval_results.txt" if args.do_eval else "test_submissions.txt")
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Test submission file *****")
-                label_map = {i: label for i, label in enumerate(label_list)}
-                for test, pred in zip(eval_examples, preds):
-                    writer.write("%s,%s\n" % (test.guid, label_map[pred]))
+        output_eval_file = os.path.join(args.output_dir, "test_predictions.txt")
+        with open(output_eval_file, "w") as writer:
+            logger.info("*****Writing Test predictions file *****")
+            label_map = {i: label for i, label in enumerate(label_list)}
+            for test, pred in zip(eval_examples, preds):
+                writer.write("%s,%s\n" % (test.guid, label_map[pred]))
 
 
 if __name__ == "__main__":
