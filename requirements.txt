@@ -11,6 +11,7 @@ tensorboard-pytorch
 git+git://github.com/j6mes/drqa@parallel
 git+git://github.com/sheffieldnlp/fever-scorer@master
 flask
+pytorch-pretrained-bert==0.6.1
 
 # mysql connector for scripts/fake-science/*
 # mysql-connector
