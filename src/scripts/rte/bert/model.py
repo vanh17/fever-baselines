@@ -456,5 +456,7 @@ def bert():
                 writer.write("%s,%s\n" % (test.guid, label_map[pred]))
 
 
+# example usage:
+# PYTHONPATH=src python src/scripts/rte/bert/model.py --do_train --do_lower_case --bert_model bert-base-uncased --db data/fever/fever.db --data_path data/fever-data/train.jsonl --output_dir logs/bert/ --train_batch_size 1
 if __name__ == "__main__":
     bert()
