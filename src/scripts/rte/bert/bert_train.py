@@ -457,6 +457,6 @@ def bert():
 
 
 # example usage:
-# PYTHONPATH=src python src/scripts/rte/bert/model.py --do_train --do_lower_case --bert_model bert-base-uncased --db data/fever/fever.db --data_path data/fever-data/train.jsonl --output_dir logs/bert/ --train_batch_size 1
+# PYTHONPATH=src python src/scripts/rte/bert/bert_train.py --do_train --do_lower_case --bert_model bert-base-uncased --db data/fever/fever.db --data_path data/fever-data/train.jsonl --output_dir logs/bert/ --train_batch_size 1
 if __name__ == "__main__":
     bert()

@@ -88,13 +88,13 @@ class FakeScienceData(object):
     def get_examples(self, data_path):
         """See base class."""
         logger.info("LOOKING AT {}".format(data_path))
-        return self._create_examples(self._read(data_path))
+        return self.create_examples(self._read(data_path))
 
     def get_labels(self):
         """See base class."""
         return ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"]
 
-    def _create_examples(self, lines):
+    def create_examples(self, lines):
         """Creates examples for the training and dev sets."""
         examples = []
         for (i, line) in enumerate(lines):
