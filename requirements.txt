@@ -5,7 +5,7 @@ typing
 overrides
 tqdm
 nltk
-allennlp==0.7.1
+allennlp==0.7.0
 flair==0.3.2
 pytz
 tensorboard-pytorch
