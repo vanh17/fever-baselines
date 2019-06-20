@@ -13,9 +13,9 @@ def main():
         train_list =  lines[:int(portion_train*length/100)]
         dev_list = lines[int(portion_train*length/100):int((portion_train + portion_dev)*length/100)]
         test_list = lines[int((portion_train + portion_dev)*length/100):]
-        train.write("\n".join(train_list))
-        dev.write("\n".join(dev_list))
-        test.write("\n".join(test_list))
+        train.write("\n".join(train_list) + "\n")
+        dev.write("\n".join(dev_list) + "\n")
+        test.write("\n".join(test_list) + "\n")
 
 
 if __name__ == '__main__':
