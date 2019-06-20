@@ -10,7 +10,7 @@ mydb = mysql.connector.connect(
 )
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) != 4:
         exit("[usage]: python3 sqltojson.py table_name [climate|astronomy|evolution|physics|...] path_to_output_folder")
     cur = mydb.cursor()
     cur.execute("SELECT * FROM " + sys.argv[1] + " WHERE category='"+ sys.argv[1] + "'")
