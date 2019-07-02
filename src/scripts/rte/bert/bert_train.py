@@ -228,7 +228,6 @@ def bert():
                         help="Whether not to use CUDA when available")
     parser.add_argument("--discr",
                         default=False,
-                        type=bool,
                         action='store_true',
                         help="Whether not to use different learning rate for individual layers of BERT")
     parser.add_argument("--local_rank",
