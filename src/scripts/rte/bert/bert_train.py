@@ -211,7 +211,7 @@ def bert():
                         type=int,
                         help="Total batch size for eval.")
     parser.add_argument("--learning_rate",
-                        default=5e-5,
+                        default=3e-5,
                         type=float,
                         help="The initial learning rate for Adam.")
     parser.add_argument("--num_train_epochs",
@@ -226,6 +226,11 @@ def bert():
     parser.add_argument("--no_cuda",
                         action='store_true',
                         help="Whether not to use CUDA when available")
+    parser.add_argument("--discr",
+                        default=False,
+                        type=bool,
+                        action='store_true',
+                        help="Whether not to use different learning rate for individual layers of BERT")
     parser.add_argument("--local_rank",
                         type=int,
                         default=-1,
@@ -309,10 +314,35 @@ def bert():
         # Prepare optimizer
         param_optimizer = list(model.named_parameters())
         no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-            {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-        ]
+        if args.discr:
+            group1 = ['layer.0.', 'layer.1.', 'layer.2.', 'layer.3.']
+            group2 = ['layer.4.', 'layer.5.', 'layer.6.', 'layer.7.']
+            group3 = ['layer.8.', 'layer.9.', 'layer.10.', 'layer.11.']
+            group_all = ['layer.0.', 'layer.1.', 'layer.2.', 'layer.3.', 'layer.4.', 'layer.5.', 'layer.6.',
+                         'layer.7.', 'layer.8.', 'layer.9.', 'layer.10.', 'layer.11.']
+            optimizer_grouped_parameters = [
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and not any(nd in n for nd in group_all)], 'weight_decay': 0.01},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group1)], 'weight_decay': 0.01, 'lr': args.learning_rate/2.6},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group2)], 'weight_decay': 0.01, 'lr': args.learning_rate},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group3)], 'weight_decay': 0.01, 'lr': args.learning_rate*2.6},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and not any(nd in n for nd in group_all)], 'weight_decay': 0.0},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group1)], 'weight_decay': 0.0, 'lr': args.learning_rate / 2.6},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group2)], 'weight_decay': 0.0, 'lr': args.learning_rate},
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)
+                            and any(nd in n for nd in group3)], 'weight_decay': 0.0, 'lr': args.learning_rate * 2.6}
+            ]
+        else:
+            optimizer_grouped_parameters = [
+                {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+                {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+            ]
 
         optimizer = BertAdam(optimizer_grouped_parameters,
                              lr=args.learning_rate,
