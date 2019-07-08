@@ -5,12 +5,15 @@ typing
 overrides
 tqdm
 nltk
+absl-py
 allennlp==0.7.1 # updated to support ESIM
 pytz
+torch
 tensorboard-pytorch
 git+git://github.com/j6mes/drqa@parallel
 git+git://github.com/sheffieldnlp/fever-scorer@master
 flask
+tensorflow
 pytorch-pretrained-bert==0.6.1
 
 # mysql connector for scripts/fake-science/*
