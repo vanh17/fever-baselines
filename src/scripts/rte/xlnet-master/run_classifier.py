@@ -70,7 +70,7 @@ flags.DEFINE_string("spiece_model_file", default="",
 flags.DEFINE_string("model_dir", default="",
       help="Directory for saving the finetuned model.")
 flags.DEFINE_string("data_dir", default="",
-      help="Directory for input data.")
+      help="Full path to input file [train/test/dev].")
 
 # TPUs and machines
 flags.DEFINE_bool("use_tpu", default=False, help="whether to use TPU.")
@@ -454,7 +454,7 @@ def main(_):
     train_file = os.path.join(FLAGS.output_dir, train_file_base)
     tf.logging.info("Use tfrecord file {}".format(train_file))
 
-    train_examples = processor.get_train_examples(FLAGS.data_dir)
+    train_examples = processor.get_examples(FLAGS.data_dir)
     np.random.shuffle(train_examples)
     tf.logging.info("Num of train samples: {}".format(len(train_examples)))
 
@@ -472,9 +472,9 @@ def main(_):
 
   if FLAGS.do_eval or FLAGS.do_predict:
     if FLAGS.eval_split == "dev":
-      eval_examples = processor.get_dev_examples(FLAGS.data_dir)
+      eval_examples = processor.get_examples(FLAGS.data_dir)
     else:
-      eval_examples = processor.get_test_examples(FLAGS.data_dir)
+      eval_examples = processor.get_examples(FLAGS.data_dir)
 
     tf.logging.info("Num of eval samples: {}".format(len(eval_examples)))
 
