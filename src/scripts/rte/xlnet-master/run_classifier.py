@@ -144,7 +144,7 @@ flags.DEFINE_bool("is_regression", default=False,
 #define the value for db, which is used in FakeScienceData processor
 flags.DEFINE_string("db", default=None,
       help="Path to fever database .db file")
-flags.DEFINE_string("filtering", default=None)
+flags.DEFINE_string("filtering", default=None, help="What do you want to filter out?")
 
 FLAGS = flags.FLAGS
 
