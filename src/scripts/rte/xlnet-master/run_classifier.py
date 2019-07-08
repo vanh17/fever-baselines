@@ -141,6 +141,11 @@ flags.DEFINE_string("cls_scope", default=None,
 flags.DEFINE_bool("is_regression", default=False,
       help="Whether it's a regression task.")
 
+#define the value for db, which is used in FakeScienceData processor
+flags.DEFINE_string("db", default=None,
+      help="Path to fever database .db file")
+flags.DEFINE_string("filtering", default=None)
+
 FLAGS = flags.FLAGS
 
 def file_based_convert_examples_to_features(
@@ -413,7 +418,7 @@ def main(_):
   if task_name not in processors:
     raise ValueError("Task not found: %s" % (task_name))
 
-  processor = processors[task_name]()
+  processor = processors[task_name](flags.db, flags.filtering)
   label_list = processor.get_labels() if not FLAGS.is_regression else None
 
   sp = spm.SentencePieceProcessor()
