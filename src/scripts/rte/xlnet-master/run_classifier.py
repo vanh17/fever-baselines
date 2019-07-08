@@ -418,7 +418,7 @@ def main(_):
   if task_name not in processors:
     raise ValueError("Task not found: %s" % (task_name))
 
-  processor = processors[task_name](flags.db, flags.filtering)
+  processor = processors[task_name](FLAGS.db, FLAGS.filtering)
   label_list = processor.get_labels() if not FLAGS.is_regression else None
 
   sp = spm.SentencePieceProcessor()
